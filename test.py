@@ -69,4 +69,4 @@ class PPL:
         return res
     
 ppl = PPL()
-ppl.profiler(PPL.get_basic, kwargs={"freq":"1T"})
+ppl.profiler(PPL.get_basic, kwargs={"freq":"1min"})
