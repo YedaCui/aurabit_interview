@@ -1,5 +1,6 @@
 import h5py
 import pandas as pd
+import numpy as np
 import os
 
 
@@ -45,10 +46,10 @@ class PPL:
                 res_dates.append(date)
                 with h5py.File(f'{self.base_path}/{id}_{date}.h5', 'r') as f:
                     res.append(dayprofiler(f, **kwargs))
-        return pd.concat(res, keys=res_dates)
+        return pd.concat(res, keys=res_dates, names=["Date"])
     
     @staticmethod
-    def get_basic(f, freq="1T"):
+    def get_basic(f, freq="1min"):
         df = pd.DataFrame({
             k: f[k][:] for k in f.keys()
         })
@@ -64,9 +65,22 @@ class PPL:
         res = pd.DataFrame({
             "open" : resampled["MidPrice"]["first"],
             "close" : resampled["MidPrice"]["last"],
-            "volume": resampled["Volume"]["last"] - resampled["Volume"]["first"]
+            "volume": resampled["Volume"]["last"] - resampled["Volume"]["first"] 
         })
-        return res
+        res["Time"] = res.index.strftime("%H%M%S")
+        res = res.set_index("Time").dropna(how="all")
+        res.xs
     
+    @staticmethod
+    def get_close(f):
+        df = pd.DataFrame({
+            k: f[k][:] for k in f.keys()
+        })
+        df["MidPrice"] = (df["AskPrice1"] * df["AskVolume1"] + df["BidPrice1"] * df["BidVolume1"]) / (df["AskVolume1"] + df["BidVolume1"])
+        
+        return pd.DataFrame({
+            "close": np.array([df["MidPrice"].iloc[-1]])
+        })
+
 ppl = PPL()
-ppl.profiler(PPL.get_basic, kwargs={"freq":"1min"})
+df = ppl.profiler(PPL.get_basic, kwargs={"freq":"1min"})
